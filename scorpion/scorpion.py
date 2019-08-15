@@ -3,7 +3,6 @@ import json
 
 current_dir = os.getcwd()
 config_file = f'{current_dir}/scorpion.json'
-is_first_time = False
 
 def get_config():
 	"""
@@ -14,15 +13,14 @@ def get_config():
 	"""
 	try:
 		with open(config_file, 'r') as config:
-			return json.loads(config.read())
+			return (json.loads(config.read()), False)
 	except IOError:
-		return init_config()
+		return (init_config(), True)
 
 def init_config():
 	"""
 		Creates a new `scorpion.json`
 	"""
-	is_first_time = True
 	print('Creating a new "scorpion.json"\n')
 	origin = input('Enter path of files to copy (relative): ')
 	target = input('Enter path to copy files (absolute): ')
@@ -51,7 +49,7 @@ def prompt_launch_on_init():
 	run_now = input('Enter "Y" to execute scorpion, any other key to abort.\n')
 	return run_now.lower() == 'y'
 
-def print_config(config):
+def print_config(config, is_first_time):
 	"""
 		Prints loaded configuration
 	"""
@@ -87,22 +85,24 @@ def copy_new_files(config):
 	log(cmd_copy)
 	os.system(cmd_copy)
 
+def main_job(config):
+	recreate(config)
+	copy_new_files(config)
+
 def start():
 	"""
 		Initializes files sharing
 	"""
-	config = get_config()
-	run_now = print_config(config)
+	(config, is_first_time) = get_config()
+	run_now = print_config(config, is_first_time)
 
-	if not is_first_time:
-		recreate(config)
-		copy_new_files(config)
-	else:
-		if is_first_time and run_now:
-			recreate(config)
-			copy_new_files(config)
+	if is_first_time:
+		if run_now:
+			main_job(config)
 		else:
 			print('scorpion exited')
 			return
+	else:
+		main_job(config)
 
 start()
